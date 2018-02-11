@@ -1,2 +1,2 @@
-# structure_generator
+# Structure generator
 Generate structure for lammps, VASP, terachem
