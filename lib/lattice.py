@@ -55,7 +55,7 @@ class lattice:
                         x = x0 + basis_vector + self.a[0] * n[0] + self.a[1] * n[1] + self.a[2] * n[2]
                         if self.__in_box(x):
                             self.lattice.append(x)
-        print ("\r", end="")
+        print ("\rcreate lattice: 100 %")
     def print(self):
         print ("rho = {:.2f} 1/bohr**3, N = {:d}".format(self.rho, self.N) )
         print ("wall size = {:.2f} bohr ( {:.2f} A )".format(self.wall_size, self.wall_size * self.Ab))
