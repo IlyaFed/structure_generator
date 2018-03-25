@@ -10,18 +10,24 @@ class molecule:
         self.mass_ions = mass_ions
         self.mass_electron = mass_electron
         self.type_names = []
+        self.full_mass = 0
 
     def mass(self):
         '''
         Return full mass of molecules
         '''
-        full_mass = self.mass_electron
-        for mass_ion in self.mass_ions:
-            full_mass += mass_ion
-        return full_mass
+        return self.full_mass
+    
+    def mass_ion(self):
+        '''
+        Return mass of one ion
+        '''
+        return self.mass_ions[0]
+    
 
     def return_mass(self):
         return {1: 1.008, 2: 0.005}
+    
 
     def get_datas(self, center_coord=[]):
         '''

@@ -8,8 +8,9 @@ from lib.hydrogen_atom import hydrogen_atom
 from lib.hydrogen_atom_minus import hydrogen_atom_minus
 from lib.hydrogen_triatomic import hydrogen_triatomic
 
-Ab = 0.529e-8
-aem = 1.66e-24
+Ab = 0.529e-8 # Boltzman radius
+amu = 1.66e-24 # atom unity of mass
+kbol = 1.38e-16 # Boltzman constant
 
 class lattice(printing):
     def __init__(self, data_string):
@@ -19,6 +20,7 @@ class lattice(printing):
         Or 
         "n_types 2 h2 100 h+ 100 rho 1.0"
         '''
+        self.str_parametrs = data_string
         self.lattice = list()
         self.molecules = []
         self.molecules_count = []
@@ -57,7 +59,7 @@ class lattice(printing):
             ind = data_string.index('rho')
             # convert rho to number of lattice points, rho in g/cm^3 -> 1/cm^3
             rho = float(data_string[ ind + 1 ])
-            rho_n = rho/(self.mass_average * aem)
+            rho_n = rho/(self.mass_average * amu)
             atom_unit_rho = rho_n*Ab**3
             self.rho = atom_unit_rho
             N_units = self.N
@@ -79,12 +81,12 @@ class lattice(printing):
         # Check the temperature to create momentum distribution
         if 'T' in data_string:
             self.T_flag = True # print velocity to file or not
-            T = data_string[ data_string.index('T') + 1]
-            self.make_momentum(T)
+            T = float(data_string[ data_string.index('T') + 1])
+            self.make_velocities(T)
 
         else:
             self.T_flag = False
-            self.momentums = [ np.array([0,0,0]) for i in range(self.N) ]
+            self.velocities = [ np.array([0,0,0]) for i in range(self.N) ]
 
         self.create_system()
 
@@ -102,14 +104,14 @@ class lattice(printing):
         n_max = int( (self.N / len(self.basis)) ** (1. / 3) )
         n = np.zeros(3)
         for n[0] in range(-n_max, n_max, 1):
-            print ("\rcreate lattice: {:d} %".format(int( (n[0] + n_max) / ( 2. * n_max) * 100)), end="" )
+            print ("\rcreate lattice {:s}: {:d} %".format(self.str_parametrs, int( (n[0] + n_max) / ( 2. * n_max) * 100)), end="" )
             for n[1] in range(-n_max, n_max, 1):
                 for n[2] in range(-n_max, n_max, 1):
                     for basis_vector in self.basis:
                         x = x0 + basis_vector + self.a[0] * n[0] + self.a[1] * n[1] + self.a[2] * n[2]
                         if self.__in_box(x):
                             self.lattice.append(x)
-        print ("\rcreate lattice: 100 %")
+        print ("\rcreate lattice {:s}: 100 %".format(self.str_parametrs))
 
     
 
@@ -122,19 +124,19 @@ class lattice(printing):
     def create_system(self):
         self.system = []
         rest_coordinates = self.lattice[:]
-        rest_momentums = self.momentums[:]
+        rest_velocities = self.velocities[:]
 
         for index in range(self.n_types):
             N = self.molecules_count[index]
             molecule = self.molecules[index]
             coordinates = rest_coordinates[:N]
             rest_coordinates = rest_coordinates[N:]
-            momentums = rest_momentums[:N]
-            rest_momentums = rest_momentums[N:]
+            velocities = rest_velocities[:N]
+            rest_velocities = rest_velocities[N:]
             
             spin = 1
             for i in range(N):
-                new_data, spin = molecule.get(coordinate = coordinates[i], momentum = momentums[i], spin = spin)
+                new_data, spin = molecule.get(coordinate = coordinates[i], velocities = velocities[i], spin = spin)
                 self.system.extend(new_data)
         
     
@@ -144,10 +146,45 @@ class lattice(printing):
         if name == 'h-': return hydrogen_atom_minus()
         if name == 'h3+': return hydrogen_triatomic()
 
-    def make_momentum(self, T):
-        #TODO need to create momentum creation
-        pass
+    def make_velocities(self, T):
+        # check that number of particles of all type is even, it's neccessary to achieve zero full momentum
+        for n in self.molecules_count:
+            if (n % 2) == 1:
+                print ("Number of particles for all types must be even")
+                raise ValueError
+        
+        most_except_energy = 1.38e-23*T/4.36e-18 # kT in Hartry energy units
+        energy_range = np.linspace(0, most_except_energy*3, 1000)
+        coeff = 0
+        for e in energy_range:
+            coeff += np.sqrt(e) * np.exp(-e/most_except_energy)
+        coeff = self.N*1000/coeff # we need more than need, to get random value, next we will use two similar energy to make momentum zero
+        energy_list = []
+        for e in energy_range:
+            energy_list += [e] * int( coeff * np.sqrt(e) *  np.exp(-e/most_except_energy))
+        
+        rand_list = random.sample(range(len(energy_list)), int(self.N/2)) # choose random place for N atoms, next we will use two similar energy to make momentum zero
+        energy_list = [ energy_list[item] for item in rand_list]
+        # next we will create momentum distribution for all particles type
+        rest_energies = energy_list[:]
+        self.velocities = []
+        for index in range(self.n_types):
+            N = self.molecules_count[index]
+            N = int(N/2) # two oposite moment
+            mass = self.molecules[index].mass_ion()
+            energies = rest_energies[:N]
+            rest_energies = rest_energies[N:]
+            for e in energies:
+                v = np.sqrt(2*e/mass) 
+                # create random direction of momentum
+                vector = np.random.rand(3)
+                vector /= np.linalg.norm(vector)
+                v = vector*v
+                self.velocities.append(v)
+                # make momentum zero
+                self.velocities.append(-v)
 
+                
     def get_molecules(self, data_string):
         if 'mol' in data_string:
             # if we have only one molecules for lattice we will use this option

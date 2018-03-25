@@ -12,6 +12,7 @@ class printing:
         self.lattice = []
         self.rho = 0
         self.N = 0
+        self.str_parametrs = ""
 
     def print(self):
         print ("rho = {:.2f} 1/bohr**3, N = {:d}".format(self.rho, self.N) )
@@ -34,7 +35,7 @@ class printing:
 
     def print_lammps(self, filename):
         dfile = open(filename, "w")
-        dfile.write("Date_file to box block\n\n"+
+        dfile.write("Date_file to box block, parametrs: {:s}\n\n".format(self.str_parametrs)+
                     "{:d} atoms\n".format(len(self.system))+
                     "2 atom types\n\n"
                     "0 {:f} xlo xhi\n".format(self.wall_size[0])+
@@ -55,12 +56,19 @@ class printing:
                 dfile.write("{:4d} {:4d} {:4f} {:4d} {:4f} {:.4f} {:.4f} {:.4f}\n".format(number, item['type'], item['charge'], item['s'], item['r'], item['x'], item['y'], item['z']))
             number += 1
         if self.T_flag:
-            print ("\nVelocities\n\n")
+            dfile.write("\nVelocities\n\n")
             number = 1
             for item in self.system:
                 if item['type'] == 1:
-                    dfile.write("{:d} {:4f} {:4f} {:4f}\n".format(number, item['vx'], item['vy'], item['vz']))
+                    dfile.write("{:d} {:4f} {:4f} {:4f} {:4f}\n".format(number, item['vx'], item['vy'], item['vz'], 0.000))
                 if item['type'] == 2:
                     dfile.write("{:d} {:4f} {:4f} {:4f} {:4f}\n".format(number, item['vx'], item['vy'], item['vz'], item['vr']))
                 number += 1
+        dfile.close()
+
+    def print_xyz(self, filename, type_names = ['H', 'e']):
+        dfile = open(filename, 'w')
+        dfile.write("{:d}\n\n".format(len(self.system)) )
+        for item in self.system:
+            dfile.write("{:s} {:.4f} {:.4f} {:.4f}\n".format(type_names[item['type']-1], item['x'] * Ab, item['y'] * Ab, item['z'] * Ab))
         dfile.close()

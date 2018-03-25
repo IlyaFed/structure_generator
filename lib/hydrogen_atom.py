@@ -8,8 +8,9 @@ class hydrogen_atom(molecule):
         super().__init__(mass_ions = mass_ions, mass_electron = mass_electron)
         self.distance = 0.7416/Aborh
         self.mass_h = self.mass_ions[0]
+        self.full_mass = self.mass_h + self.mass_electron
 
-    def get(self, coordinate, momentum=np.array([0,0,0]), spin = 0):
+    def get(self, coordinate, velocities=np.array([0,0,0]), spin = 0):
         """
         Here we define our molecule or atom in structure and return list of coord to print
         :param coordinate: coordinate of center of molecule
@@ -17,8 +18,6 @@ class hydrogen_atom(molecule):
         """
         data = []
         mass_full = self.mass_h + self.mass_electron
-        # get velocities from moment
-        velocities = momentum / mass_full
         # electron properties TODO make it depend on temperature
         electron_r = 1.86
         electron_vr = 0
@@ -31,7 +30,7 @@ class hydrogen_atom(molecule):
             el_spin = spin
         data.append( {
             'x':coordinate[0], 'y': coordinate[1], 'z': coordinate[2], 'r': electron_r, 
-            'vx': velocities[0], 'vy': velocities[1], 'vz': velocities[2], 'rv': electron_vr, 
+            'vx': velocities[0], 'vy': velocities[1], 'vz': velocities[2], 'vr': electron_vr, 
             'name': 'e', 'type': 2, 'charge': 0, 's': el_spin
             } )
         # ion
