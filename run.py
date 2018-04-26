@@ -1,7 +1,7 @@
 from lib.lattice import lattice
 import os
-rho = 0.6
-N = 6000
+rho = 0.4
+N = 1000
 
 com_folder = "output/data/rho" + str(rho)
 try:
