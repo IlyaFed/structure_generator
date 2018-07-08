@@ -1,9 +1,9 @@
 from lib.lattice import lattice
 import os
-rho = 0.4
+rho = 0.8
 N = 1000
 
-com_folder = "output/data/rho" + str(rho)
+com_folder = "output/to_publish/rho" + str(rho)
 try:
     os.stat(com_folder)
 except:
